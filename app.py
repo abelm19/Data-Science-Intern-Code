@@ -7,14 +7,14 @@ from PIL import Image
 import plotly.graph_objects as go  # For interactive plots
 
 # Reading the csv file for making historical vs prediction plots
-df = pd.read_csv('/Users/abelmetek/Desktop/Capstone/Global_Temp - Global_Temp.csv.csv')
+df = pd.read_csv('Global_Temp - Global_Temp.csv.csv')
 df2 = df.drop('Year', axis = 1)
 df2['Year'] = df['Year']
 input_data = df2[['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
        'Oct', 'Nov', 'Dec', 'D-N', 'DJF', 'MAM', 'JJA', 'SON', 'Year']]
 
 # loading the saved model
-loaded_model = pickle.load(open('/Users/abelmetek/Desktop/Capstone/trained_model.sav', 'rb'))
+loaded_model = pickle.load(open('trained_model.sav', 'rb'))
 predictions = loaded_model.predict(input_data)
 df['Predicted_Annual_Anomaly'] = predictions
 
