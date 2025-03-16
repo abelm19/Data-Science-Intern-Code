@@ -3,135 +3,98 @@ import numpy as np
 import pandas as pd
 import pickle
 import streamlit as st
+import joblib
+import prophet
+import matplotlib.pyplot as plt
 from PIL import Image
-import plotly.graph_objects as go  # For interactive plots
+#import plotly.graph_objects as go  # For interactive plots
 
-# Reading the csv file for making historical vs prediction plots
-df = pd.read_csv('Global_Temp - Global_Temp.csv.csv')
-df2 = df.drop('Year', axis = 1)
-df2['Year'] = df['Year']
-input_data = df2[['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-       'Oct', 'Nov', 'Dec', 'D-N', 'DJF', 'MAM', 'JJA', 'SON', 'Year']]
+import base64
 
-# loading the saved model
-loaded_model = pickle.load(open('trained_model.sav', 'rb'))
-predictions = loaded_model.predict(input_data)
-df['Predicted_Annual_Anomaly'] = predictions
+def add_bg_from_local(image_file):
+    with open(image_file, "rb") as img_file:
+        encoded_string = base64.b64encode(img_file.read()).decode()
 
-# creating a function for Prediction
-
-def annual_average_temp_anomaly_prediction(input_data):
-    
-
-    # changing the input_data to numpy array
-    input_data_as_numpy_array = np.asarray(input_data)
-
-    # reshape the array as we are predicting for one instance
-    input_data_reshaped = input_data_as_numpy_array.reshape(1,-1)
-
-    prediction = loaded_model.predict(input_data_reshaped)
-    print(prediction)
-
-    if (prediction[0] > 0):
-      return f'The annual average temp is predicted to be {prediction[0]:.2f}, which means it is more warmer this year than the baseline-average '
-    elif (prediction[0] == 0):
-      return f'The annual average temp is predicted to be {prediction[0]:.2f} which means it the same this year as the baseline-average' 
-    else: 
-     return f'The annual average temp is predicted to be  {prediction[0]:.2f} which means it is more colder this year than average'
-    
-  
-def main():
-    
-    
-# giving a title
-
-# Convert the image to a base64 string
-    import base64
-    from io import BytesIO
-    
-    def img_to_base64(img_path):
-     with open(img_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode("utf-8")
-
-    # Local image path
-    image_path = 'backgroundimg.jpg'  # Replace with your image path
-    img_base64 = img_to_base64(image_path)
-
-    # Add CSS to set the background image
-    st.markdown(
-     f"""
-     <style>
-        .stApp {{
-        background-image: url('data:image/jpeg;base64,{img_base64}');
+    # Apply CSS for background
+    bg_css = f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpg;base64,{encoded_string}");
         background-size: cover;
         background-position: center;
-        background-repeat: no-repeat;
-        }}
+        background-attachment: fixed;
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)));
+        color: white;
+    }}
+    </style>
+    """
+    st.markdown(bg_css, unsafe_allow_html=True)
 
-       .custom-text-box {{
-        background-color: rgba(0, 0, 0, 0.7);  /* Dark background */
-        color: white;  /* White text */
-        padding: 20px;
-        border-radius: 10px;
-        font-size: 18px;
-       }}
-        </style>
-        """, 
-     unsafe_allow_html=True
-)
+# Call function to set background
+add_bg_from_local("back.jpg")
 
-    
-    
-    # getting the input data from the user
-with st.sidebar:
-    st.header( 'All inputs for tempratures are in °C'
-    )
-    
-    Jan_Anomaly = st.number_input('Input the average anomomaly for month January')
-    Feb_Anomaly = st.number_input('Input the average anomomaly for month February')
-    Mar_Anomaly = st.number_input('Input the average anomomaly for month March')
-    Apr_Anomaly = st.number_input('Input the average anomomaly for month April')
-    May_Anomaly = st.number_input('Input the average anomomaly for month May')
-    June_Anomaly = st.number_input('Input the average anomomaly for month June')
-    July_Anomaly = st.number_input('Input the average anomomaly for month July')
-    Aug_Anomaly = st.number_input('Input the average anomomaly for month August')
-    Sept_Anomaly = st.number_input('Input the average anomomaly for month September')
-    Oct_Anomaly = st.number_input('Input the average anomomaly for month October')
-    Nov_Anomaly = st.number_input('Input the average anomomaly for month November')
-    Dec_Anomaly = st.number_input('Input the average anomomaly for month December')
-    December_to_November_Anomaly = st.number_input('Input the average anomomaly from December of last year to November of this year')
-    DJF = st.number_input('Input the average anomomaly from December of last year to February of this year(Winter Months)')
-    MAM = st.number_input('Input the average anomomaly from March to May(Spring Months)')
-    JJA = st.number_input('Input the average anomomaly from July to August (Summer Months)')
-    SON = st.number_input('Input the average anomomaly from September to November (Fall Months)')
-    #Year = st.text_input('Input the Year you want to predict')
-    Year = st.slider("Select the Year", 1880, 2100)
-     # Prediction Button
-    if st.button('Predict Average Annual Temperature Anomaly'):
-     if not all([Jan_Anomaly, Feb_Anomaly, Mar_Anomaly, Apr_Anomaly, May_Anomaly, June_Anomaly, July_Anomaly, Aug_Anomaly, Sept_Anomaly, Oct_Anomaly, Nov_Anomaly, Dec_Anomaly, December_to_November_Anomaly, DJF, MAM, JJA, SON, Year]):
-         st.error("Please fill in all input fields.")
-     else:
-         Januray_December_Anomaly = annual_average_temp_anomaly_prediction([Jan_Anomaly, Feb_Anomaly, Mar_Anomaly, Apr_Anomaly, May_Anomaly, June_Anomaly, July_Anomaly, Aug_Anomaly, Sept_Anomaly, Oct_Anomaly, Nov_Anomaly, Dec_Anomaly, December_to_November_Anomaly, DJF, MAM, JJA, SON, Year])
-         st.success(Januray_December_Anomaly)
+# Load the trained Prophet model
+model = joblib.load("prophet_model.pkl")
 
-st.title('Annual Mean Temperature Anomaly Prediction Web App')
-    
-  
-    
-    
-# Interactive Plot
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=df['Year'], y=df['J-D'], mode='lines', name='Historical Annual Anomalies'))
-fig.add_trace(go.Scatter(x=df['Year'], y=df['Predicted_Annual_Anomaly'], mode='lines', name='Predicted Annual Anomalies', line=dict(dash='dash')))
-fig.update_layout(title='Historical vs Predicted Annual Average Temperature Anomalies', xaxis_title='Year', yaxis_title='Temperature Anomaly (°C)')
-st.plotly_chart(fig)
 
-    # About Section
-st.expander("About this App").markdown("""
-    This app predicts the annual average temperature anomaly based on monthly and seasonal temperature anomalies.
-    The model is trained on historical temperature data.
-    """)    
-    
-    
-if __name__ == '__main__':
-    main()
+def predict_for_date(year, month):
+    # Create a DataFrame for the user-input year and month
+    future_date = pd.DataFrame({'ds': [pd.Timestamp(f"{year}-{month:02d}-01")]})
+
+    # Make prediction
+    forecast = model.predict(future_date)
+
+    # Extract values
+    predicted_value = round(forecast['yhat'].values[0], 2)
+    lower_bound = round(forecast['yhat_lower'].values[0], 2)
+    upper_bound = round(forecast['yhat_upper'].values[0], 2)
+
+    return predicted_value, lower_bound, upper_bound, forecast
+
+
+# Streamlit UI
+st.title("Monthly Temperature Anomaly Prediction 🌡️")
+
+# User input: Year & Month
+future_year = st.number_input("Enter a future year (e.g., 2030)", min_value=2025, max_value=2100, step=1)
+future_month = st.selectbox("Select a month",
+                            ["January", "February", "March", "April", "May", "June",
+                             "July", "August", "September", "October", "November", "December"])
+
+# Convert month name to number
+month_dict = {month: i + 1 for i, month in enumerate([
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"])}
+future_month_num = month_dict[future_month]
+
+if st.button("Predict"):
+    predicted_value, lower_bound, upper_bound, forecast = predict_for_date(future_year, future_month_num)
+
+    # Display user-friendly message
+    st.success(f"🌍 The estimated temperature anomaly for **{future_month} {future_year}** is "
+               f"**{predicted_value}°C** (Range: {lower_bound}°C to {upper_bound}°C).")
+
+    # Generate full forecast from 1880 to the selected year
+    future_dates = pd.DataFrame({'ds': pd.date_range(start="1880-01-01",
+                                                     end=f"{future_year}-{future_month_num:02d}-01",
+                                                     freq="MS")})  # MS = Month Start
+
+    full_forecast = model.predict(future_dates)
+
+    # Plot trend
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(full_forecast['ds'], full_forecast['yhat'], label="Predicted Anomaly", color="blue")
+    ax.fill_between(full_forecast['ds'], full_forecast['yhat_lower'], full_forecast['yhat_upper'],
+                    color="blue", alpha=0.2, label="Confidence Interval")
+
+    # Highlight the user-selected prediction
+    user_prediction_date = pd.Timestamp(f"{future_year}-{future_month_num:02d}-01")
+    ax.scatter(user_prediction_date, predicted_value, color="red", label="User's Prediction", s=100)
+
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Temperature Anomaly (°C)")
+    ax.set_title("Temperature Anomaly Trend from 1880 to Prediction Date")
+    ax.legend()
+
+    # Show plot in Streamlit
+    st.pyplot(fig)
